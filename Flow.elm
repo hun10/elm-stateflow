@@ -2,9 +2,10 @@ module Flow where
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Keyboard
 
-main =
-  view 0.5 "Hello helloh helloh helo русские буквы как смотрят"
+main = Signal.map (text << toString) Keyboard.presses
+--  view 0.5 "Hello helloh helloh helo русские буквы как смотрят"
 
 view opacity txt =
   div [ style [ ("padding", "20px")
