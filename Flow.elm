@@ -7,7 +7,7 @@ import Keyboard
 import String
 
 main =
-  Signal.map (view 0.5 << String.fromChar << Char.fromCode) Keyboard.presses
+  Signal.map (view 0.5) chars
 
 view opacity txt =
   div [ style [ ("padding", "20px")
@@ -19,3 +19,6 @@ view opacity txt =
               ]]
   [ text txt
   ]
+
+chars =
+  Signal.map (String.fromChar << Char.fromCode) Keyboard.presses
