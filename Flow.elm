@@ -6,8 +6,8 @@ import Html.Attributes exposing (..)
 import Keyboard
 import String
 
-main = Signal.map (text << String.fromChar << Char.fromCode) Keyboard.presses
---  view 0.5 "Hello helloh helloh helo русские буквы как смотрят"
+main =
+  Signal.map (view 0.5 << String.fromChar << Char.fromCode) Keyboard.presses
 
 view opacity txt =
   div [ style [ ("padding", "20px")
