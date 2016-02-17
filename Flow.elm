@@ -11,8 +11,6 @@ main =
 
 view opacity txt =
   div [ style [ ("padding", "20px")
-              , ("margin", "40px")
-              , ("border", "1px solid")
               , ("font-family", "Modern")
               , ("font-size", "14pt")
               , ("opacity", toString opacity)
