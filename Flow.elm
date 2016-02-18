@@ -13,12 +13,18 @@ main =
 defaultTimeToFade = 5 * Time.second
 
 view {model, timeToFade, sessionTimeLeft} =
+  div []
+  [ viewTime sessionTimeLeft
+  , viewText model timeToFade
+  ]
+
+viewText model timeToFade =
   div [ style [ ("padding", "20px")
               , ("font-family", "Modern")
               , ("font-size", "14pt")
               , ("opacity", toString <| timeToFade / defaultTimeToFade )
               ]]
-  <| (viewTime sessionTimeLeft) :: (List.map (\txt -> p [] [text txt]) <| model)
+  <| List.map (\txt -> p [] [text txt]) <| model
 
 viewTime t =
   let
