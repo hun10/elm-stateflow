@@ -7,19 +7,51 @@ import Keyboard
 import String
 
 main =
-  Signal.map (view 0.5) typedText
+  Signal.map (view 0.5) paragraphs
 
-view opacity txt =
+view opacity paragraphs =
   div [ style [ ("padding", "20px")
               , ("font-family", "Modern")
               , ("font-size", "14pt")
               , ("opacity", toString opacity)
               ]]
-  [ text txt
-  ]
+  <| List.map (\txt -> p [] [text txt]) paragraphs
 
-typedText =
-  Signal.foldp (flip (++)) "" chars
+paragraphs =
+  Signal.foldp update [] actions
+
+update action model =
+  let
+    reversed = List.reverse model
+  in
+  case (action, reversed) of
+    (Typed s, []) ->
+      [s]
+    
+    (NewParagraph, []) ->
+      []
+    
+    (Typed s, last :: previous) ->
+      List.reverse <| (last ++ s) :: previous
+    
+    (NewParagraph, "" :: previous) ->
+      model
+    
+    (NewParagraph, _) ->
+      model ++ []
+
+type Action
+  = Typed String
+  | NewParagraph
+
+actions =
+  Signal.merge newParagraphs chars
+
+newParagraphs =
+  Signal.map (\_ -> NewParagraph) Keyboard.enter
 
 chars =
-  Signal.map (String.fromChar << Char.fromCode) Keyboard.presses
+  Signal.map codeToAction Keyboard.presses
+
+codeToAction code =
+  Typed (String.fromChar << Char.fromCode <| code)
