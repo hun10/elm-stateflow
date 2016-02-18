@@ -38,14 +38,17 @@ update action model =
       model
     
     (NewParagraph, _) ->
-      model ++ []
+      model ++ [""]
 
 type Action
   = Typed String
   | NewParagraph
 
 actions =
-  Signal.merge newParagraphs chars
+  Signal.mergeMany [newParagraphs, spaceBars, chars]
+
+spaceBars =
+  Signal.map (\_ -> Typed " ") Keyboard.space
 
 newParagraphs =
   Signal.map (\_ -> NewParagraph) Keyboard.enter
@@ -54,4 +57,4 @@ chars =
   Signal.map codeToAction Keyboard.presses
 
 codeToAction code =
-  Typed (String.fromChar << Char.fromCode <| code)
+  Typed (String.trim << String.fromChar << Char.fromCode <| code)
