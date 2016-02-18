@@ -12,17 +12,25 @@ main =
 
 defaultTimeToFade = 5 * Time.second
 
-view {model, timeToFade} =
+view {model, timeToFade, sessionTimeLeft} =
   div [ style [ ("padding", "20px")
               , ("font-family", "Modern")
               , ("font-size", "14pt")
               , ("opacity", toString <| timeToFade / defaultTimeToFade )
               ]]
-  <| List.map (\txt -> p [] [text txt]) <| model
+  <| (viewTime sessionTimeLeft) :: (List.map (\txt -> p [] [text txt]) <| model)
+
+viewTime t =
+  let
+    seconds = floor (t / Time.second) % 60
+    minutes = floor (t / Time.minute)
+    dd = String.padLeft 2 '0' << toString
+  in
+    text <| (dd minutes) ++ ":" ++ (dd seconds)
 
 state =
   Signal.foldp update { model = []
-                      , timeToFade = 0
+                      , timeToFade = defaultTimeToFade
                       , sessionTimeLeft = 5 * Time.minute
                       } actions
 
@@ -32,7 +40,7 @@ update action m =
     model = m.model
     timeToFade = m.timeToFade
   in
-  if (Debug.watch "session" m.sessionTimeLeft) > 0 then
+  if m.sessionTimeLeft > 0 then
     case (action, reversed) of
       (Typed s, []) ->
         { m | model = [s]
