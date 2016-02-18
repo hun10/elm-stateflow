@@ -21,7 +21,10 @@ view {model, timeToFade} =
   <| List.map (\txt -> p [] [text txt]) <| model
 
 state =
-  Signal.foldp update { model = [], timeToFade = 0 } actions
+  Signal.foldp update { model = []
+                      , timeToFade = 0
+                      , sessionTimeLeft = 5 * Time.minute
+                      } actions
 
 update action m =
   let
@@ -29,38 +32,44 @@ update action m =
     model = m.model
     timeToFade = m.timeToFade
   in
-  case (action, reversed) of
-    (Typed s, []) ->
-      { m | model = [s]
-          , timeToFade = defaultTimeToFade
-      }
-    
-    (NewParagraph, []) ->
-      { m | model = []
-          , timeToFade = defaultTimeToFade
-      }
-    
-    (Typed s, last :: previous) ->
-      { m | model = List.reverse <| (last ++ s) :: previous
-          , timeToFade = defaultTimeToFade
-      }
-    
-    (NewParagraph, "" :: previous) ->
-      m
-    
-    (NewParagraph, _) ->
-      { m | model = model ++ [""]
-          , timeToFade = defaultTimeToFade
-      }
-    
-    (TimeElapsed t, _) ->
-      if t > timeToFade then
-        { model = []
-        , timeToFade = 0
+  if m.sessionTimeLeft > 0 then
+    case (action, reversed) of
+      (Typed s, []) ->
+        { m | model = [s]
+            , timeToFade = defaultTimeToFade
         }
-      else
-        { m | timeToFade = timeToFade - t
+      
+      (NewParagraph, []) ->
+        { m | model = []
+            , timeToFade = defaultTimeToFade
         }
+      
+      (Typed s, last :: previous) ->
+        { m | model = List.reverse <| (last ++ s) :: previous
+            , timeToFade = defaultTimeToFade
+        }
+      
+      (NewParagraph, "" :: previous) ->
+        m
+      
+      (NewParagraph, _) ->
+        { m | model = model ++ [""]
+            , timeToFade = defaultTimeToFade
+        }
+      
+      (TimeElapsed t, _) ->
+        if t > timeToFade then
+          { m | model = []
+              , timeToFade = 0
+          }
+        else
+          { m | timeToFade = timeToFade - t
+              , sessionTimeLeft = m.sessionTimeLeft - t
+          }
+  else
+    { m | timeToFade = defaultTimeToFade
+        , sessionTimeLeft = 0
+    }
 
 type Action
   = Typed String
