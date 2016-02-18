@@ -32,7 +32,7 @@ update action m =
     model = m.model
     timeToFade = m.timeToFade
   in
-  if m.sessionTimeLeft > 0 then
+  if (Debug.watch "session" m.sessionTimeLeft) > 0 then
     case (action, reversed) of
       (Typed s, []) ->
         { m | model = [s]
@@ -61,6 +61,7 @@ update action m =
         if t > timeToFade then
           { m | model = []
               , timeToFade = 0
+              , sessionTimeLeft = m.sessionTimeLeft - t
           }
         else
           { m | timeToFade = timeToFade - t
