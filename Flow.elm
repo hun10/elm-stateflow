@@ -38,6 +38,7 @@ state =
   Signal.foldp update { model = []
                       , timeToFade = defaultTimeToFade
                       , sessionTimeLeft = 5 * Time.minute
+                      , state = WaitingForFirstStroke
                       } actions
 
 update action m =
@@ -46,45 +47,59 @@ update action m =
     model = m.model
     timeToFade = m.timeToFade
   in
-  if m.sessionTimeLeft > 0 then
-    case (action, reversed) of
-      (Typed s, []) ->
-        { m | model = [s]
-            , timeToFade = defaultTimeToFade
-        }
-      
-      (NewParagraph, []) ->
-        { m | model = []
-            , timeToFade = defaultTimeToFade
-        }
-      
-      (Typed s, last :: previous) ->
-        { m | model = List.reverse <| (last ++ s) :: previous
-            , timeToFade = defaultTimeToFade
-        }
-      
-      (NewParagraph, "" :: previous) ->
-        m
-      
-      (NewParagraph, _) ->
-        { m | model = model ++ [""]
-            , timeToFade = defaultTimeToFade
-        }
-      
-      (TimeElapsed t, _) ->
-        if t > timeToFade then
+  case (m.state, action) of
+    (WaitingForFirstStroke, Typed _) ->
+      update action { m | state = SessionInProgress }
+    
+    (SessionInProgress, _) ->
+      case (action, reversed) of
+        (Typed s, []) ->
+          { m | model = [s]
+              , timeToFade = defaultTimeToFade
+          }
+        
+        (NewParagraph, []) ->
           { m | model = []
-              , timeToFade = 0
-              , sessionTimeLeft = m.sessionTimeLeft - t
+              , timeToFade = defaultTimeToFade
           }
-        else
-          { m | timeToFade = timeToFade - t
-              , sessionTimeLeft = m.sessionTimeLeft - t
+        
+        (Typed s, last :: previous) ->
+          { m | model = List.reverse <| (last ++ s) :: previous
+              , timeToFade = defaultTimeToFade
           }
-  else
-    { m | timeToFade = defaultTimeToFade
-        , sessionTimeLeft = 0
-    }
+        
+        (NewParagraph, "" :: previous) ->
+          m
+        
+        (NewParagraph, _) ->
+          { m | model = model ++ [""]
+              , timeToFade = defaultTimeToFade
+          }
+        
+        (TimeElapsed t, _) ->
+          if m.sessionTimeLeft > t then
+            if t > timeToFade then
+              { m | model = []
+                  , timeToFade = 0
+                  , sessionTimeLeft = m.sessionTimeLeft - t
+              }
+            else
+              { m | timeToFade = timeToFade - t
+                  , sessionTimeLeft = m.sessionTimeLeft - t
+              }
+          else
+            { m | timeToFade = defaultTimeToFade
+                , sessionTimeLeft = 0
+                , state = SessionEnded
+            }
+    
+    _ ->
+      m
+
+type States
+  = WaitingForFirstStroke
+  | SessionInProgress
+  | SessionEnded
 
 type Action
   = Typed String
