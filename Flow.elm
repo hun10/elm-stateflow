@@ -3,6 +3,7 @@ module Flow where
 import Char
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Keyboard
 import String
 import Time exposing (Time)
@@ -12,7 +13,21 @@ main =
 
 defaultTimeToFade = 5 * Time.second
 
-view {model, timeToFade, sessionTimeLeft} =
+view m =
+  case m.state of
+    ChooseSessionTime ->
+      div []
+        <| List.map (buttonForSessionTime newSessionTimes.address)
+        <| List.map (\x -> x * Time.minute) [5, 10, 15, 20, 25, 30, 45, 60]
+    
+    _ ->
+      viewSession m
+
+buttonForSessionTime address time =
+  button [onClick address time]
+    [viewTime time]
+
+viewSession {model, timeToFade, sessionTimeLeft} =
   div []
   [ viewTime sessionTimeLeft
   , viewText model timeToFade
@@ -37,8 +52,8 @@ viewTime t =
 state =
   Signal.foldp update { model = []
                       , timeToFade = defaultTimeToFade
-                      , sessionTimeLeft = 5 * Time.minute
-                      , state = WaitingForFirstStroke
+                      , sessionTimeLeft = 0
+                      , state = ChooseSessionTime
                       } actions
 
 update action m =
@@ -92,12 +107,21 @@ update action m =
                 , sessionTimeLeft = 0
                 , state = SessionEnded
             }
+        
+        _ -> -- TODO: make nesting (or actions translations) to expell all disallowed action
+          m
+    
+    (ChooseSessionTime, SetSession t) ->
+      { m | sessionTimeLeft = t
+          , state = WaitingForFirstStroke
+      }
     
     _ ->
       m
 
 type States
   = WaitingForFirstStroke
+  | ChooseSessionTime
   | SessionInProgress
   | SessionEnded
 
@@ -105,9 +129,19 @@ type Action
   = Typed String
   | NewParagraph
   | TimeElapsed Time
+  | SetSession Time
+
+newSessionTimes : Signal.Mailbox Time
+newSessionTimes =
+  Signal.mailbox 0
 
 actions =
-  Signal.mergeMany [newParagraphs, spaceBars, chars, ticks]
+  Signal.mergeMany [newParagraphs
+                   , spaceBars
+                   , chars
+                   , ticks
+                   , Signal.map SetSession newSessionTimes.signal
+                   ]
 
 ticks =
   Signal.map TimeElapsed (Time.fps 5)
