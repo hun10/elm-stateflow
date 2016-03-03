@@ -13,6 +13,9 @@ main =
 
 defaultTimeToFade = 5 * Time.second
 
+ease x =
+  1 - (1 - x) ^ 1.5
+
 view m =
   case m.state of
     ChooseSessionTime ->
@@ -37,7 +40,7 @@ viewText model timeToFade =
   div [ style [ ("padding", "20px")
               , ("font-family", "Modern")
               , ("font-size", "14pt")
-              , ("opacity", toString <| timeToFade / defaultTimeToFade )
+              , ("opacity", toString << ease  <| timeToFade / defaultTimeToFade )
               ]]
   <| List.map (\txt -> p [] [text txt]) <| model
 
