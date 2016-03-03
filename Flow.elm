@@ -23,6 +23,12 @@ view m =
         <| List.map (buttonForSessionTime newSessionTimes.address)
         <| List.map (\x -> x * Time.minute) [5, 10, 15, 20, 25, 30, 45, 60]
     
+    SessionEnded ->
+      div []
+      [ viewSession m
+      , button [onClick startOvers.address StartOver] [text "Start Over"]
+      ]
+    
     _ ->
       viewSession m
 
@@ -52,12 +58,14 @@ viewTime t =
   in
     text <| (dd minutes) ++ ":" ++ (dd seconds)
 
+init = { model = []
+       , timeToFade = defaultTimeToFade
+       , sessionTimeLeft = 0
+       , state = ChooseSessionTime
+       }
+
 state =
-  Signal.foldp update { model = []
-                      , timeToFade = defaultTimeToFade
-                      , sessionTimeLeft = 0
-                      , state = ChooseSessionTime
-                      } actions
+  Signal.foldp update init actions
 
 update action m =
   let
@@ -119,6 +127,9 @@ update action m =
           , state = WaitingForFirstStroke
       }
     
+    (SessionEnded, StartOver) ->
+      init
+    
     _ ->
       m
 
@@ -133,17 +144,24 @@ type Action
   | NewParagraph
   | TimeElapsed Time
   | SetSession Time
+  | StartOver
+  | Nothing
 
 newSessionTimes : Signal.Mailbox Time
 newSessionTimes =
   Signal.mailbox 0
 
+startOvers : Signal.Mailbox Action
+startOvers =
+  Signal.mailbox Nothing
+
 actions =
-  Signal.mergeMany [newParagraphs
+  Signal.mergeMany [ newParagraphs
                    , spaceBars
                    , chars
                    , ticks
                    , Signal.map SetSession newSessionTimes.signal
+                   , startOvers.signal
                    ]
 
 ticks =
